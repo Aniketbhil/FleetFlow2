@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth
+from app.api import auth, vehicles
 from app.core.database import engine, Base
 from app.core.config import settings
 
@@ -18,3 +18,4 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
+app.include_router(vehicles.router)
