@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from datetime import date
+import asyncio
 
-
+from app.websocket.manager import manager
 from app.models.trip import Trip
 from app.models.vehicle import Vehicle
 from app.models.driver import Driver
@@ -45,6 +46,12 @@ def create_trip(db: Session, data):
 
     db.add(trip)
     db.commit()
+    asyncio.create_task(
+        manager.broadcast({
+            "event": "trip_dispatched",
+            "trip_id": trip.id
+        })
+    )
     db.refresh(trip)
 
     return trip
@@ -71,6 +78,12 @@ def complete_trip(db: Session, trip_id: int, end_odometer: float):
     driver.status = "On Duty"
 
     db.commit()
+    asyncio.create_task(
+        manager.broadcast({
+            "event": "trip_completed",
+            "trip_id": trip.id
+        })
+    )
     db.refresh(trip)
 
     return trip
