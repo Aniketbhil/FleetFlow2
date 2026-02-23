@@ -1,24 +1,47 @@
 from sqlalchemy.orm import Session
-
+from fastapi import HTTPException
 from app.models.user import User
 from app.core.security import hash_password, verify_password, create_access_token
 
+
 def register_user(db: Session, email: str, password: str, role: str):
-    hashed= hash_password(password)
-    user = User(email=email, password_hash=hashed, role=role)
-    db.add(user)
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    # Hash password
+    hashed_password = hash_password(password)
+
+    # Create user
+    new_user = User(
+        email=email,
+        password_hash=hashed_password,
+        role=role
+    )
+
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    return {"message": "User Created Successfully"}
+    db.refresh(new_user)
+
+    return new_user
+
 
 def login_user(db: Session, email: str, password: str):
+    # Find user
     user = db.query(User).filter(User.email == email).first()
-    if not user:
-        return None
-    if not verify_password(password, user.password_hash):
-        return None
-    token = create_access_token({"sub": str(user.id)})
-    return token
 
-# register → hash → save
-# login → verify → generate JWT
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Verify password
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Create JWT token
+    token = create_access_token({
+        "sub": str(user.id),
+        "role": user.role
+    })
+
+    return token
