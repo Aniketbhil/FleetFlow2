@@ -15,7 +15,7 @@ function Register() {
       role,
     });
 
-    if ( "User Created Successfully") {
+    if (data.id) {
       alert("Registration successful. You can now login.");
     } else {
       alert("Registration failed.");
